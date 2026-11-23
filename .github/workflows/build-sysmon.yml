@@ -1,0 +1,99 @@
+name: Build SysMon TrollStore IPA
+
+on:
+  workflow_dispatch:
+
+env:
+  XCODE_VERSION: '15.4'
+
+jobs:
+  build:
+    name: Build floating CPU/RAM/Net monitor IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Setup Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install build dependencies
+        run: |
+          HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install dpkg make libplist openssl@3 ldid-procursus
+          echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
+
+<<<<<<< HEAD
+=======
+      - name: Checkout this repo (patched source file + workflow)
+        uses: actions/checkout@v4
+        with:
+          path: patch
+
+      - name: Download upstream TrollSpeed source (codeload)
+        run: |
+          cd $GITHUB_WORKSPACE
+          curl -fL -o ts.tar.gz https://codeload.github.com/Lessica/TrollSpeed/tar.gz/refs/heads/main
+          mkdir -p TrollSpeed
+          tar xzf ts.tar.gz -C TrollSpeed --strip-components=1
+
+      - name: Apply CPU/RAM patch
+        run: |
+          cd $GITHUB_WORKSPACE
+          cp -f patch/patched/HUDRootViewController.mm TrollSpeed/sources/HUDRootViewController.mm
+          echo "=== verify patch applied ==="
+          grep -c "formattedSystemString" TrollSpeed/sources/HUDRootViewController.mm
+
+>>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
+      - name: Checkout roothide/theos
+        uses: actions/checkout@v4
+        with:
+          repository: roothide/theos
+          path: theos
+          submodules: recursive
+
+      - name: Add THEOS environment variables
+        run: |
+          rm -rf $GITHUB_WORKSPACE/theos/sdks
+          echo "THEOS=$GITHUB_WORKSPACE/theos" >> $GITHUB_ENV
+
+      - name: Checkout theos/sdks
+        uses: actions/checkout@v4
+        with:
+          repository: theos/sdks
+          ref: master
+          path: ${{ env.THEOS }}/sdks
+
+<<<<<<< HEAD
+      - name: Checkout this repo (with CPU/RAM changes)
+        uses: actions/checkout@v4
+        with:
+          path: TrollSpeed
+          submodules: recursive
+=======
+      - name: Init submodules in TrollSpeed
+        run: |
+          cd $GITHUB_WORKSPACE/TrollSpeed
+          git init -q
+          git submodule update --init --recursive 2>/dev/null || true
+          echo "PKG_VERSION=$(./get-version.sh)" >> $GITHUB_ENV
+          ./gen-control.sh
+>>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
+
+      - name: Build tipa with Xcode
+        run: |
+          cd $GITHUB_WORKSPACE/TrollSpeed
+<<<<<<< HEAD
+          echo "PKG_VERSION=$(./get-version.sh)" >> $GITHUB_ENV
+          ./gen-control.sh
+=======
+>>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
+          ./build.sh
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SysMon_${{ env.PKG_VERSION }}
+          path: |
+            TrollSpeed/packages/TrollSpeed+AppIntents16_*.tipa
+            TrollSpeed/packages/TrollSpeed_*.tipa
+          if-no-files-found: error
