@@ -4,13 +4,12 @@ on:
   workflow_dispatch:
 
 env:
-  XCODE_VERSION: '15.4'
+  XCODE_VERSION: "15.4"
 
 jobs:
   build:
     name: Build floating CPU/RAM/Net monitor IPA
     runs-on: macos-14
-
     steps:
       - name: Setup Xcode version
         uses: maxim-lobanov/setup-xcode@v1
@@ -22,28 +21,20 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install dpkg make libplist openssl@3 ldid-procursus
           echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
 
-<<<<<<< HEAD
-=======
-      - name: Checkout this repo (patched source file + workflow)
+      - name: Checkout source (with CPU/RAM patch already applied)
         uses: actions/checkout@v4
         with:
-          path: patch
+          path: TrollSpeed
+          submodules: recursive
 
-      - name: Download upstream TrollSpeed source (codeload)
+      - name: Verify patch is present
         run: |
-          cd $GITHUB_WORKSPACE
-          curl -fL -o ts.tar.gz https://codeload.github.com/Lessica/TrollSpeed/tar.gz/refs/heads/main
-          mkdir -p TrollSpeed
-          tar xzf ts.tar.gz -C TrollSpeed --strip-components=1
+          cd $GITHUB_WORKSPACE/TrollSpeed
+          echo "=== CPU/RAM patch check ==="
+          grep -c "formattedSystemString" sources/HUDRootViewController.mm
+          echo "PKG_VERSION=$(./get-version.sh)" >> $GITHUB_ENV
+          ./gen-control.sh
 
-      - name: Apply CPU/RAM patch
-        run: |
-          cd $GITHUB_WORKSPACE
-          cp -f patch/patched/HUDRootViewController.mm TrollSpeed/sources/HUDRootViewController.mm
-          echo "=== verify patch applied ==="
-          grep -c "formattedSystemString" TrollSpeed/sources/HUDRootViewController.mm
-
->>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
       - name: Checkout roothide/theos
         uses: actions/checkout@v4
         with:
@@ -63,30 +54,9 @@ jobs:
           ref: master
           path: ${{ env.THEOS }}/sdks
 
-<<<<<<< HEAD
-      - name: Checkout this repo (with CPU/RAM changes)
-        uses: actions/checkout@v4
-        with:
-          path: TrollSpeed
-          submodules: recursive
-=======
-      - name: Init submodules in TrollSpeed
-        run: |
-          cd $GITHUB_WORKSPACE/TrollSpeed
-          git init -q
-          git submodule update --init --recursive 2>/dev/null || true
-          echo "PKG_VERSION=$(./get-version.sh)" >> $GITHUB_ENV
-          ./gen-control.sh
->>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
-
       - name: Build tipa with Xcode
         run: |
           cd $GITHUB_WORKSPACE/TrollSpeed
-<<<<<<< HEAD
-          echo "PKG_VERSION=$(./get-version.sh)" >> $GITHUB_ENV
-          ./gen-control.sh
-=======
->>>>>>> 7902b7d18c0c718884b05d62e99a80087f32e2bc
           ./build.sh
 
       - name: Upload IPA artifact
